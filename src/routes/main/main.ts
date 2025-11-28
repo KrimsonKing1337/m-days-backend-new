@@ -1,19 +1,11 @@
 import express from 'express';
 
-import { apiGet } from 'api/preset/apiGet.js';
+import { get } from 'api/media/get.js';
 
 export const router = express.Router();
 
-router.get('/api/media', async (req, res) => {
-  const { id } = req.query;
+router.get('/api/media', async (_req, res) => {
+  const image = await get();
 
-  if (!id) {
-    res.sendStatus(500);
-
-    return;
-  }
-
-  const sqlResult = await apiGet(id as string);
-
-  res.send(sqlResult);
+  res.send(image);
 });
