@@ -1,0 +1,16 @@
+.idea
+*.iml
+out
+gen
+.bak
+.vscode
+
+node_modules
+build
+dist
+stats.json
+*.local.*
+.globals.js
+*.env
+
+*.sqlite

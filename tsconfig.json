@@ -1,0 +1,34 @@
+{
+  "compilerOptions": {
+    "lib": ["ESNext"],
+    "module": "NodeNext",
+    "target": "ESNext",
+
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "outDir": "dist",
+    "allowJs": true,
+    "moduleResolution": "NodeNext",
+    "baseUrl": ".",
+    "rootDir": "src",
+    "paths": {
+      "types": ["./src/types/index.ts"],
+      "types/*": ["./src/types/*"],
+      "api": ["./src/api/index.ts"],
+      "api/*": ["./src/api/*"],
+      "assets": ["./src/assets"],
+      "assets/*": ["./src/assets/*"],
+      "db": ["./src/db"],
+      "db/*": ["./src/db/*"],
+      "routes": ["./src/routes/index.ts"],
+      "routes/*": ["./src/routes/*"],
+      "utils": ["./src/utils/index.ts"],
+      "utils/*": ["./src/utils/*"]
+    }
+  },
+
+  "include": ["src/**/*"],
+  "exclude": ["node_modules"]
+}
