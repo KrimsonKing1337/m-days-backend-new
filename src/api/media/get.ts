@@ -99,19 +99,25 @@ async function getRandomImage(collection: Collection, filter: ImageFilterSafe = 
   return result[0] ?? null;
 }
 
-export async function get(preset: string) {
+export async function get(preset: string, filter: ImageFilterSafe = {}) {
   const db = client.db('cache');
   const collection = db.collection('images');
 
   const randomValueFromPreset = await getRandomValueFromPreset(preset);
 
-  let randomImage = await getRandomImage(collection, randomValueFromPreset);
+  let randomImage = await getRandomImage(collection, {
+    ...randomValueFromPreset,
+    ...filter,
+  });
 
   // если ничего не нашлось - берём рандом из дефолта
   if (!randomImage) {
     const randomValueFromPreset = await getRandomValueFromPreset('default');
 
-    randomImage = getRandomImage(collection, randomValueFromPreset);
+    randomImage = await getRandomImage(collection, {
+      ...randomValueFromPreset,
+      ...filter,
+    });
   }
 
   return randomImage;
