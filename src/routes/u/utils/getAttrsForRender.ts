@@ -7,7 +7,8 @@ export function getAttrsForRender(query: any) {
 
   const queryString = querystring.stringify(query);
 
-  const ext = 'static' ? 'jpg' : 'gif';
+  // const ext = 'static' ? 'jpg' : 'gif';
+  const ext = 'jpg';
   const id = nanoid();
 
   let bgImgSrc = `/l-bg_${id}.${ext}`;

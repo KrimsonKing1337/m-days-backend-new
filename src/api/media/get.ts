@@ -1,4 +1,7 @@
-import { Collection, MongoClient } from 'mongodb';
+import type { Collection, Document, WithId } from 'mongodb';
+import { MongoClient } from 'mongodb';
+
+import { getRandomInt } from 'utils/getRandomInt.js';
 
 const client = new MongoClient('mongodb://localhost:27017');
 
@@ -15,7 +18,27 @@ type ImageFilter = {
 
 type ImageFilterSafe = Partial<ImageFilter> | undefined;
 
-async function getRandomImage(collection: Collection<Document>, filter: ImageFilterSafe = {}): Promise<any | null> {
+async function getRandomValueFromPreset(preset: string) {
+  await client.connect();
+
+  const db = client.db('presets');
+  const collection = db.collection('presets');
+
+  const document = await collection.findOne({ id: preset }) as WithId<Document>;
+
+  const typeRandomInt = getRandomInt(0, 1);
+  const randomType = typeRandomInt === 0 ? 'dynamic' : 'static';
+
+  const values = document.values[randomType];
+
+  const valuesRandomInt = getRandomInt(0, values.length - 1);
+
+  await client.close();
+
+  return values[valuesRandomInt];
+}
+
+async function getRandomImage(collection: Collection, filter: ImageFilterSafe = {}): Promise<any | null> {
   const match: Record<string, any> = {};
 
   if (filter.type) {
@@ -67,11 +90,24 @@ async function getRandomImage(collection: Collection<Document>, filter: ImageFil
   return result[0] ?? null;
 }
 
-export async function get() {
+export async function get(preset: string) {
   await client.connect();
 
   const db = client.db('cache');
   const collection = db.collection('images');
 
-  return getRandomImage(collection);
+  const randomValueFromPreset = await getRandomValueFromPreset(preset);
+
+  let randomImage = getRandomImage(collection, randomValueFromPreset);
+
+  // если ничего не нашлось - берём рандом из дефолта
+  if (!randomImage) {
+    const randomValueFromPreset = await getRandomValueFromPreset('default');
+
+    randomImage = getRandomImage(collection, randomValueFromPreset);
+  }
+
+  await client.close();
+
+  return randomImage;
 }
