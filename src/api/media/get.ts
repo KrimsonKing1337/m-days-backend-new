@@ -4,6 +4,7 @@ import { MongoClient } from 'mongodb';
 import { getRandomInt } from 'utils/getRandomInt.js';
 
 const client = new MongoClient('mongodb://localhost:27017');
+await client.connect();
 
 type Orientation = 'h' | 'v' | 's';
 
@@ -19,21 +20,29 @@ type ImageFilter = {
 type ImageFilterSafe = Partial<ImageFilter> | undefined;
 
 async function getRandomValueFromPreset(preset: string) {
-  await client.connect();
-
   const db = client.db('presets');
   const collection = db.collection('presets');
 
   const document = await collection.findOne({ id: preset }) as WithId<Document>;
 
-  const typeRandomInt = getRandomInt(0, 1);
-  const randomType = typeRandomInt === 0 ? 'dynamic' : 'static';
+  let randomType = '';
+
+   const valuesStaticLength = document.values.static.length;
+   const valuesDynamicLength = document.values.dynamic.length;
+
+  if (valuesStaticLength && valuesDynamicLength) {
+    const typeRandomInt = getRandomInt(0, 1);
+
+    randomType = typeRandomInt === 0 ? 'dynamic' : 'static';
+  } else if (valuesStaticLength) {
+    randomType = 'static';
+  } else if (valuesDynamicLength) {
+    randomType = 'dynamic';
+  }
 
   const values = document.values[randomType];
 
   const valuesRandomInt = getRandomInt(0, values.length - 1);
-
-  await client.close();
 
   return values[valuesRandomInt];
 }
@@ -91,14 +100,12 @@ async function getRandomImage(collection: Collection, filter: ImageFilterSafe = 
 }
 
 export async function get(preset: string) {
-  await client.connect();
-
   const db = client.db('cache');
   const collection = db.collection('images');
 
   const randomValueFromPreset = await getRandomValueFromPreset(preset);
 
-  let randomImage = getRandomImage(collection, randomValueFromPreset);
+  let randomImage = await getRandomImage(collection, randomValueFromPreset);
 
   // если ничего не нашлось - берём рандом из дефолта
   if (!randomImage) {
@@ -106,8 +113,6 @@ export async function get(preset: string) {
 
     randomImage = getRandomImage(collection, randomValueFromPreset);
   }
-
-  await client.close();
 
   return randomImage;
 }
