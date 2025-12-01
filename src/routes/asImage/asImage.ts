@@ -3,22 +3,22 @@ import express from 'express';
 import { type Orientation, get as mediaGet } from 'api/media/get.js';
 import { get as presetGet } from 'api/preset/get.js';
 
-import { getAttrsForRender } from 'routes/legacy/utils/utils.js';
-import { generateImageWithLabels } from 'routes/legacy/utils/generateImageWithLabels.js';
-import { getClosestWidth } from 'routes/legacy/utils/getClosestWidth.js';
+import { getAttrsForRender } from 'routes/asImage/utils/utils.js';
+import { generateImageWithLabels } from 'routes/asImage/utils/generateImageWithLabels.js';
+import { getClosestWidth } from 'routes/asImage/utils/getClosestWidth.js';
 
-export const legacyRouter = express.Router();
+export const asImageRouter = express.Router();
 
-legacyRouter.get('/l', async (req, res) => {
+asImageRouter.get('/ai', async (req, res) => {
   const { bgImgSrc, metaRefresh } = getAttrsForRender(req.query);
 
-  res.render('legacy', {
+  res.render('asImage', {
     bgImgSrc,
     metaRefresh,
   });
 });
 
-legacyRouter.get(/\/l-slide?.+/, async (req, res) => {
+asImageRouter.get(/\/ai-slide?.+/, async (req, res) => {
   const query = req.query;
 
   const {

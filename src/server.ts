@@ -5,7 +5,7 @@ import helmet from 'helmet';
 import bodyParser from 'body-parser';
 
 import { router } from './routes/main/main.js';
-import { legacyRouter } from './routes/legacy/legacy.js';
+import { asImageRouter } from './routes/asImage/asImage.js';
 
 const app = express();
 
@@ -60,7 +60,7 @@ app.set('views', 'src/views');
 app.set('view engine', 'ejs');
 
 app.use(router);
-app.use(legacyRouter);
+app.use(asImageRouter);
 
 app.listen(port, () => {
   console.log(`We are living on ${port}`);

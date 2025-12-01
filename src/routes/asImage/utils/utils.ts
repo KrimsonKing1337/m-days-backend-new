@@ -11,7 +11,7 @@ export function getAttrsForRender(query: ParsedQs) {
 
   const uuid = nanoid();
 
-  let bgImgSrc = `/l-slide_${uuid}.jpg`;
+  let bgImgSrc = `/ai-slide_${uuid}.jpg`;
 
   if (queryString) {
     bgImgSrc += `?${queryString}`;
