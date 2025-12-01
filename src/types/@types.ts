@@ -13,7 +13,7 @@ export type Preset = {
 };
 
 export type GetImagesWithLabelsAttrs = {
-  tz: string;
+  timezone: string;
   resolution: string;
   imagePath: string;
   orientation: string;

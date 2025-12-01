@@ -6,7 +6,7 @@ import { getRandomInt } from 'utils/getRandomInt.js';
 const client = new MongoClient('mongodb://localhost:27017');
 await client.connect();
 
-type Orientation = 'h' | 'v' | 's';
+export type Orientation = 'h' | 'v' | 's';
 
 type ImageFilter = {
   type: 'static' | 'dynamic';
