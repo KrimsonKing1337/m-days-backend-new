@@ -1,5 +1,6 @@
 import type { Database } from 'sqlite';
 import sqlite3 from 'sqlite3';
+import { Orientation } from 'api/media/get.js';
 
 export type Preset = {
   id?: string;
@@ -22,4 +23,14 @@ export type GetImagesWithLabelsAttrs = {
   gif?: boolean;
 };
 
-export type Db = Database<sqlite3.Database, sqlite3.Statement>;
+export type ImageFilter = {
+  type: 'static' | 'dynamic';
+  collection: string | string[];
+  topic: string | string[];
+  orientation: Orientation[];
+  width: [number, number];
+  height: [number, number];
+  size: [number, number];
+  windowWidth: number;
+  windowHeight: number;
+};

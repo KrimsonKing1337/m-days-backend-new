@@ -1,4 +1,5 @@
-export function getClosestWidth(width: number) {
+export function getClosestWidth(width: number): number {
+  if (width < 128) return 128;
   if (width >= 128 && width < 240) return 128;
   if (width >= 240 && width < 360) return 240;
   if (width >= 360 && width < 480) return 360;

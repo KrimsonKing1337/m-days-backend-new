@@ -1,6 +1,10 @@
 import type { Collection, Document, WithId } from 'mongodb';
 import { MongoClient } from 'mongodb';
 
+import { get as _get } from 'lodash-es';
+
+import type { ImageFilter } from 'types';
+
 import { getRandomInt } from 'utils/getRandomInt.js';
 
 const client = new MongoClient('mongodb://localhost:27017');
@@ -8,27 +12,18 @@ await client.connect();
 
 export type Orientation = 'h' | 'v' | 's';
 
-type ImageFilter = {
-  type: 'static' | 'dynamic';
-  collection: string;
-  topic: string;
-  orientation: Orientation[];
-  width: [number, number];
-  size: [number, number];
-};
-
 type ImageFilterSafe = Partial<ImageFilter> | undefined;
 
-async function getRandomValueFromPreset(preset: string) {
+async function getPreparedFilterFromPreset(preset: string, filter: ImageFilterSafe = {}): Promise<ImageFilterSafe> {
   const db = client.db('presets');
   const collection = db.collection('presets');
 
-  const document = await collection.findOne({ id: preset }) as WithId<Document>;
+  const presetInfo = await collection.findOne({ id: preset }) as WithId<Document>;
 
-  let randomType = '';
+  let randomType = 'static' as ImageFilter['type'];
 
-   const valuesStaticLength = document.values.static.length;
-   const valuesDynamicLength = document.values.dynamic.length;
+   const valuesStaticLength = presetInfo.values.static.length;
+   const valuesDynamicLength = presetInfo.values.dynamic.length;
 
   if (valuesStaticLength && valuesDynamicLength) {
     const typeRandomInt = getRandomInt(0, 1);
@@ -40,26 +35,83 @@ async function getRandomValueFromPreset(preset: string) {
     randomType = 'dynamic';
   }
 
-  const values = document.values[randomType];
+  const collections: string[] = [];
+  const topics: string[] = [];
 
-  const valuesRandomInt = getRandomInt(0, values.length - 1);
+  type Value = {
+    collection: string;
+    topic: string;
+  };
 
-  return values[valuesRandomInt];
+  const values: Value[] = presetInfo.values[randomType];
+
+  values.forEach((valueCur) => {
+    const { collection, topic } = valueCur;
+
+    collections.push(collection);
+    topics.push(topic);
+  });
+
+  type WidthFromPreset = [number | string, number | string];
+
+  const widthFromPreset: WidthFromPreset = _get(presetInfo, `options.${randomType}.width`) || [1920, 1920];
+
+  let widthFromPresetSafe = widthFromPreset;
+
+  if (widthFromPreset.length) {
+    const [min, max] = widthFromPreset;
+
+    let minSafe = min === 'windowWidth' ? filter.windowWidth : min;
+    let maxSafe = max === 'windowWidth' ? filter.windowWidth : max;
+
+    minSafe = minSafe ?? 1920;
+    maxSafe = maxSafe ?? 1920;
+
+    widthFromPresetSafe = [minSafe as number, maxSafe as number];
+  }
+
+  const widthFromPresetSafeRightType = widthFromPresetSafe as [number, number];
+
+  // width -> preset width -> windowWidth
+  let width = filter.width ? filter.width : widthFromPresetSafeRightType;
+
+  if (!width) {
+    width = filter.windowWidth ? [filter.windowWidth, filter.windowWidth] : [1920, 1920];
+  }
+
+  return {
+    type: randomType,
+    width,
+    collection: collections,
+    topic: topics,
+  };
 }
 
 async function getRandomImage(collection: Collection, filter: ImageFilterSafe = {}): Promise<any | null> {
   const match: Record<string, any> = {};
 
   if (filter.type) {
-    match.type = filter.type;
-  }
-
-  if (filter.collection) {
-    match.collection = filter.collection;
+    match.type = Array.isArray(filter.type)
+      ? { $in: filter.type }
+      : filter.type;
   }
 
   if (filter.topic) {
-    match.topic = filter.topic;
+    match.topic = Array.isArray(filter.topic)
+      ? { $in: filter.topic }
+      : filter.topic;
+  }
+
+  if (filter.collection) {
+    match.collection = Array.isArray(filter.collection)
+      ? { $in: filter.collection }
+      : filter.collection;
+  }
+
+  if (filter.topic) {
+    match.topic = Array.isArray(filter.topic)
+      ? { $in: filter.topic }
+      : filter.topic;
   }
 
   if (filter.orientation && filter.orientation.length > 0) {
@@ -103,19 +155,19 @@ export async function get(preset: string, filter: ImageFilterSafe = {}) {
   const db = client.db('cache');
   const collection = db.collection('images');
 
-  const randomValueFromPreset = await getRandomValueFromPreset(preset);
+  const preparedFilterFromPreset = await getPreparedFilterFromPreset(preset, filter);
 
   let randomImage = await getRandomImage(collection, {
-    ...randomValueFromPreset,
+    ...preparedFilterFromPreset,
     ...filter,
   });
 
   // если ничего не нашлось - берём рандом из дефолта
   if (!randomImage) {
-    const randomValueFromPreset = await getRandomValueFromPreset('default');
+    const preparedFilterFromPreset = await getPreparedFilterFromPreset('default');
 
     randomImage = await getRandomImage(collection, {
-      ...randomValueFromPreset,
+      ...preparedFilterFromPreset,
       ...filter,
     });
   }

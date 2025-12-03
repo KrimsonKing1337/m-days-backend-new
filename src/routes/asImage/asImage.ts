@@ -5,7 +5,8 @@ import { get as presetGet } from 'api/preset/get.js';
 
 import { getAttrsForRender } from 'routes/asImage/utils/utils.js';
 import { generateImageWithLabels } from 'routes/asImage/utils/generateImageWithLabels.js';
-import { getClosestWidth } from 'routes/asImage/utils/getClosestWidth.js';
+
+import { getClosestWidth } from 'utils/getClosestWidth.js';
 
 export const asImageRouter = express.Router();
 
@@ -35,13 +36,13 @@ asImageRouter.get(/\/ai-slide?.+/, async (req, res) => {
   let resolution = r as string;
 
   if (!r) {
-    resolution = presetInfo.resolution || '1920*1080';
+    resolution = presetInfo.options.resolution || '1920*1080';
   }
 
   let orientation = o as Orientation;
 
   if (!o) {
-    orientation = presetInfo.resolution || 'h';
+    orientation = presetInfo.options.orientation || 'h';
   }
 
   const timezone = tz as string;
@@ -56,7 +57,7 @@ asImageRouter.get(/\/ai-slide?.+/, async (req, res) => {
     orientation: [orientation],
   });
 
-  const imagePath = `D:\\Projects\\m-days\\01. digital\\m-days-public-images\\${mediaGetResult.path}`;
+  const imagePath = `../m-days-public-images/${mediaGetResult.path}`;
 
   const result = await generateImageWithLabels({
     resolution,
