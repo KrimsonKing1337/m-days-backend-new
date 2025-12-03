@@ -24,8 +24,6 @@ const rateLimitOpts = {
 
 const webRoot = path.resolve('../');
 
-// const buildPath = process.NODE_ENV !== 'production' ? 3000 : 8080;
-
 if (!webRoot) {
   console.error('webRoot does not specified!');
 }
@@ -43,10 +41,11 @@ app.disable('x-powered-by');
 */
 // app.use('/', express.static(path.join(webRoot, '')));
 
-app.use(express.static(path.join(webRoot, 'm-days-public')));
+// не помню зачем нужен m-days-public, если он дублирует dist
+// app.use(express.static(path.join(webRoot, 'm-days-public')));
 app.use(express.static(path.join(webRoot, 'm-days-public-images')));
 
-app.use('/', express.static(path.join(webRoot, 'm-days-jquery/dist')));
+app.use('/', express.static(path.join(webRoot, 'm-days-fe-widget/dist')));
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({
