@@ -35,7 +35,7 @@ async function getPreparedFilterFromPreset(preset: string, filter: ImageFilterSa
     presetInfo,
     filter,
     randomType,
-  })
+  });
 
   return {
     type: randomType,
@@ -118,7 +118,7 @@ export async function get(preset: string, filter: ImageFilterSafe = {}) {
     ...filter,
   });
 
-  // если ничего не нашлось - берём рандом из дефолта
+  // Если ничего не нашлось - берём рандом из дефолта. Дефолт всегда должен быть
   if (!randomImage) {
     const preparedFilterFromPreset = await getPreparedFilterFromPreset('default');
 
