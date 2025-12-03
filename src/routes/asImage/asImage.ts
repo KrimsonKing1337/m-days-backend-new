@@ -1,10 +1,12 @@
 import express from 'express';
 
-import { type Orientation, get as mediaGet } from 'api/media/get.js';
+import type { Orientation } from 'types/@types.js';
+
+import { get as mediaGet } from 'api/media/get.js';
 import { get as presetGet } from 'api/preset/get.js';
 
-import { getAttrsForRender } from 'routes/asImage/utils/utils.js';
-import { generateImageWithLabels } from 'routes/asImage/utils/generateImageWithLabels.js';
+import { getAttrsForRender } from './utils/utils.js';
+import { generateImageWithLabels } from './utils/generateImageWithLabels.js';
 
 import { getClosestWidth } from 'utils/getClosestWidth.js';
 

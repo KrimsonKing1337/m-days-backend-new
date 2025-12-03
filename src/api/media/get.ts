@@ -1,16 +1,12 @@
 import type { Collection, Document, WithId } from 'mongodb';
 import { MongoClient } from 'mongodb';
 
-import { get as _get } from 'lodash-es';
+import type { ImageFilter, Preset } from 'types';
 
-import type { ImageFilter } from 'types';
-
-import { getRandomInt } from 'utils/getRandomInt.js';
+import { getRandomType, getWidth } from 'api/media/utils.js';
 
 const client = new MongoClient('mongodb://localhost:27017');
 await client.connect();
-
-export type Orientation = 'h' | 'v' | 's';
 
 type ImageFilterSafe = Partial<ImageFilter> | undefined;
 
@@ -18,32 +14,15 @@ async function getPreparedFilterFromPreset(preset: string, filter: ImageFilterSa
   const db = client.db('presets');
   const collection = db.collection('presets');
 
-  const presetInfo = await collection.findOne({ id: preset }) as WithId<Document>;
+  const presetInfoDocument = await collection.findOne({ id: preset }) as WithId<Document>;
+  const presetInfo = presetInfoDocument as unknown as Preset;
 
-  let randomType = 'static' as ImageFilter['type'];
-
-   const valuesStaticLength = presetInfo.values.static.length;
-   const valuesDynamicLength = presetInfo.values.dynamic.length;
-
-  if (valuesStaticLength && valuesDynamicLength) {
-    const typeRandomInt = getRandomInt(0, 1);
-
-    randomType = typeRandomInt === 0 ? 'dynamic' : 'static';
-  } else if (valuesStaticLength) {
-    randomType = 'static';
-  } else if (valuesDynamicLength) {
-    randomType = 'dynamic';
-  }
+  const randomType = getRandomType(presetInfo);
 
   const collections: string[] = [];
   const topics: string[] = [];
 
-  type Value = {
-    collection: string;
-    topic: string;
-  };
-
-  const values: Value[] = presetInfo.values[randomType];
+  const values = presetInfo.values[randomType];
 
   values.forEach((valueCur) => {
     const { collection, topic } = valueCur;
@@ -52,32 +31,11 @@ async function getPreparedFilterFromPreset(preset: string, filter: ImageFilterSa
     topics.push(topic);
   });
 
-  type WidthFromPreset = [number | string, number | string];
-
-  const widthFromPreset: WidthFromPreset = _get(presetInfo, `options.${randomType}.width`) || [1920, 1920];
-
-  let widthFromPresetSafe = widthFromPreset;
-
-  if (widthFromPreset.length) {
-    const [min, max] = widthFromPreset;
-
-    let minSafe = min === 'windowWidth' ? filter.windowWidth : min;
-    let maxSafe = max === 'windowWidth' ? filter.windowWidth : max;
-
-    minSafe = minSafe ?? 1920;
-    maxSafe = maxSafe ?? 1920;
-
-    widthFromPresetSafe = [minSafe as number, maxSafe as number];
-  }
-
-  const widthFromPresetSafeRightType = widthFromPresetSafe as [number, number];
-
-  // width -> preset width -> windowWidth
-  let width = filter.width ? filter.width : widthFromPresetSafeRightType;
-
-  if (!width) {
-    width = filter.windowWidth ? [filter.windowWidth, filter.windowWidth] : [1920, 1920];
-  }
+  const width = getWidth({
+    presetInfo,
+    filter,
+    randomType,
+  })
 
   return {
     type: randomType,
@@ -91,9 +49,7 @@ async function getRandomImage(collection: Collection, filter: ImageFilterSafe = 
   const match: Record<string, any> = {};
 
   if (filter.type) {
-    match.type = Array.isArray(filter.type)
-      ? { $in: filter.type }
-      : filter.type;
+    match.type = filter.type;
   }
 
   if (filter.topic) {

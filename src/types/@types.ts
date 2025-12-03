@@ -1,16 +1,25 @@
-import type { Database } from 'sqlite';
-import sqlite3 from 'sqlite3';
-import { Orientation } from 'api/media/get.js';
+export type PresetOptionsWidth = number | 'windowWidth' | 'all';
+
+export type PresetOptionsType = {
+  width: PresetOptionsWidth[];
+};
+
+export type PresetValue = {
+  collection: string;
+  topic: string;
+};
 
 export type Preset = {
-  id?: string;
-  staticTopics: string;
-  dynamicTopics: string;
-  formats: string;
-  resolution: string;
-  orientation?: string;
-  skin: string;
-  fileSize: string;
+  id: string;
+  options?: {
+    skin?: string;
+    dynamic?: PresetOptionsType;
+    static?: PresetOptionsType;
+  };
+  values: {
+    dynamic: PresetValue[];
+    static: PresetValue[];
+  };
 };
 
 export type GetImagesWithLabelsAttrs = {
@@ -22,6 +31,8 @@ export type GetImagesWithLabelsAttrs = {
   noProcessing?: boolean;
   gif?: boolean;
 };
+
+export type Orientation = 'h' | 'v' | 's';
 
 export type ImageFilter = {
   type: 'static' | 'dynamic';
