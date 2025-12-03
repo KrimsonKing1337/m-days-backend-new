@@ -23,7 +23,12 @@ router.get('/api/preset', async (req, res) => {
 
   const presetSafe = preset ?? 'default';
 
-  const result = await presetGet(presetSafe);
+  let result = await presetGet(presetSafe);
+
+  // Если пресета нет - возвращаем данные по дефолтному
+  if (!result) {
+    await presetGet('default');
+  }
 
   res.send(result);
 });
