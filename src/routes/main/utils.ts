@@ -39,7 +39,9 @@ export function getFilterFromQuery(query: Request['query']) {
 
   if (width) {
     const widthSafe = Number(width);
-    const closestWidth = getClosestWidth(widthSafe);
+    // Если ширина в адресной строке больше, чем ширина окна - closestWidth делаем из ширины окна
+    const widthLimited = widthSafe > windowWidthSafe ? windowHeightSafe : widthSafe;
+    const closestWidth = getClosestWidth(widthLimited);
 
     filter.width = [closestWidth, closestWidth];
   }
