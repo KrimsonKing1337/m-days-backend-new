@@ -73,5 +73,6 @@ export type SliderDoc = {
   mediaId: string;
   nextMediaId: string;
   lastTickAt: Date;
+  lastAccessAt: Date;
   active: boolean;
 };

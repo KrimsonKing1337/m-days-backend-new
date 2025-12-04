@@ -5,6 +5,14 @@ import { SliderDoc } from 'types';
 const client = new MongoClient('mongodb://localhost:27017');
 await client.connect();
 
+const db = client.db('sliders');
+
+// удаляем слайдер, если не было обращений в течение часа
+db.collection('sliders').createIndex(
+  { lastAccessAt: 1 },
+  { expireAfterSeconds: 3600 }
+);
+
 type Result = {
   path: string;
   nextPath: string;
@@ -15,7 +23,7 @@ type Result = {
   nextChangeAt: number;
 };
 
-const INTERVAL_MS = 12000; // раз в секунду проверяем
+const INTERVAL_MS = 12000; // раз в 12 секунд смена слайда
 const TICK_INTERVAL_MS = 1000; // раз в секунду проверяем
 
 async function tickSliders() {
@@ -74,6 +82,7 @@ setInterval(() => {
 export async function get(preset: string): Promise<Result | null> {
   const key = preset;
   const now = Date.now();
+  const nowDate = new Date(now);
 
   const db = client.db('sliders');
   const collection = db.collection<SliderDoc>('sliders');
@@ -87,7 +96,7 @@ export async function get(preset: string): Promise<Result | null> {
 
     if (!media || !nextMedia) return null;
 
-    const startedAt = new Date(now);
+    const startedAt = nowDate;
 
     slider = {
       _id: new ObjectId(),
@@ -101,10 +110,23 @@ export async function get(preset: string): Promise<Result | null> {
       nextMediaId: nextMedia.id,
       nextMediaPath: nextMedia.path,
       lastTickAt: startedAt,
+      lastAccessAt: startedAt,
       active: true,
     };
 
     await collection.insertOne(slider);
+  } else {
+    // тут просто обновляем lastAccessAt при каждом обращении
+    slider.lastAccessAt = nowDate;
+
+    await collection.updateOne(
+      { _id: slider._id },
+      {
+        $set: {
+          lastAccessAt: nowDate,
+        },
+      },
+    );
   }
 
   const startedAtMs = slider.startedAt.getTime();
