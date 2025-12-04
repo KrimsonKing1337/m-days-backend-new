@@ -5,8 +5,6 @@ import { SliderDoc } from 'types';
 const client = new MongoClient('mongodb://localhost:27017');
 await client.connect();
 
-const INTERVAL_MS = 12000;
-
 type Result = {
   path: string;
   nextPath: string;
@@ -16,6 +14,62 @@ type Result = {
   serverTime: number;
   nextChangeAt: number;
 };
+
+const INTERVAL_MS = 12000; // раз в секунду проверяем
+const TICK_INTERVAL_MS = 1000; // раз в секунду проверяем
+
+async function tickSliders() {
+  const db = client.db('sliders');
+  const collection = db.collection<SliderDoc>('sliders');
+
+  const now = Date.now();
+  const sliders = await collection.find({ active: true }).toArray();
+
+  for (const slider of sliders) {
+    const startedAtMs = slider.startedAt.getTime();
+    const expectedStep = Math.floor((now - startedAtMs) / slider.intervalMs);
+
+    if (expectedStep > slider.step) {
+      // пора перейти вперёд
+      const preset = slider.key; // key = preset
+
+      // текущим становится previous nextMedia
+      const currentId = slider.nextMediaId;
+      const currentPath = slider.nextMediaPath;
+
+      const nextMedia = await mediaGet(preset, {});
+
+      if (!nextMedia) {
+        continue;
+      }
+
+      slider.mediaId = currentId;
+      slider.mediaPath = currentPath;
+      slider.nextMediaId = nextMedia.id;
+      slider.nextMediaPath = nextMedia.path;
+      slider.step = expectedStep;
+      slider.lastTickAt = new Date(now);
+
+      await collection.updateOne(
+        { _id: slider._id },
+        {
+          $set: {
+            mediaId: slider.mediaId,
+            mediaPath: slider.mediaPath,
+            nextMediaId: slider.nextMediaId,
+            nextMediaPath: slider.nextMediaPath,
+            step: slider.step,
+            lastTickAt: slider.lastTickAt,
+          },
+        },
+      );
+    }
+  }
+}
+
+setInterval(() => {
+  tickSliders().catch(console.error);
+}, TICK_INTERVAL_MS);
 
 export async function get(preset: string): Promise<Result | null> {
   const key = preset;
@@ -27,7 +81,7 @@ export async function get(preset: string): Promise<Result | null> {
   let slider = await collection.findOne({ key });
 
   if (!slider) {
-    // первый запуск слайдера для этого пресета
+    // первый запуск — создаём сразу media и nextMedia
     const media = await mediaGet(preset, {});
     const nextMedia = await mediaGet(preset, {});
 
@@ -43,51 +97,15 @@ export async function get(preset: string): Promise<Result | null> {
       startedAt,
       step: 0,
       mediaId: media.id,
-      nextMediaId: nextMedia.id,
       mediaPath: media.path,
+      nextMediaId: nextMedia.id,
       nextMediaPath: nextMedia.path,
       lastTickAt: startedAt,
       active: true,
     };
 
     await collection.insertOne(slider);
-  } else {
-    const startedAtMs = slider.startedAt.getTime();
-    const expectedStep = Math.floor((now - startedAtMs) / slider.intervalMs);
-
-    if (expectedStep > slider.step) {
-      // пора перейти на следующий шаг
-      const currentId = slider.nextMediaId;
-      const currentPath = slider.nextMediaPath;
-
-      const nextMedia = await mediaGet(preset, {});
-
-      if (nextMedia) {
-        slider.mediaId = currentId;
-        slider.mediaPath = currentPath;
-        slider.nextMediaId = nextMedia.id;
-        slider.nextMediaPath = nextMedia.path;
-        slider.step = expectedStep;
-        slider.lastTickAt = new Date(now);
-
-        await collection.updateOne(
-          { _id: slider._id },
-          {
-            $set: {
-              mediaId: slider.mediaId,
-              mediaPath: slider.mediaPath,
-              nextMediaId: slider.nextMediaId,
-              nextMediaPath: slider.nextMediaPath,
-              step: slider.step,
-              lastTickAt: slider.lastTickAt,
-            },
-          },
-        );
-      }
-    }
   }
-
-  if (!slider) return null;
 
   const startedAtMs = slider.startedAt.getTime();
   const nextChangeAt = startedAtMs + (slider.step + 1) * slider.intervalMs;
