@@ -18,7 +18,7 @@ type Result = {
   nextChangeAt: number;
 };
 
-let nextMedia: Media;
+let media2: Media;
 
 export async function get(preset: string): Promise<Result | null> {
   const key = preset;
@@ -32,7 +32,7 @@ export async function get(preset: string): Promise<Result | null> {
   // 1) если слайдер ещё не создан – создаём
   if (!slider) {
     const media = await mediaGet(preset, {});
-    nextMedia = await mediaGet(preset, {});
+    media2 = await mediaGet(preset, {});
 
     const startedAt = new Date(now);
 
@@ -44,9 +44,9 @@ export async function get(preset: string): Promise<Result | null> {
       startedAt,
       step: 0,
       mediaId: media.id,
-      nextMediaId: nextMedia.id,
+      nextMediaId: media2.id,
       mediaPath: media.path,
-      nextMediaPath: nextMedia.path,
+      nextMediaPath: media2.path,
       lastTickAt: startedAt,
       active: true,
     };
@@ -61,32 +61,32 @@ export async function get(preset: string): Promise<Result | null> {
 
     if (expectedStep > slider.step) {
       // шаг изменился -> берём новое рандомное изображение
-      const newMedia = await mediaGet(preset, {});
-      nextMedia = nextMedia ?? await mediaGet(preset, {});
+      const media = await mediaGet(preset, {});
+      media2 = media2 ?? await mediaGet(preset, {});
 
-      if (nextMedia && newMedia) {
+      if (media2 && media) {
         await collection.updateOne(
           { _id: slider._id },
           {
             $set: {
-              mediaId: nextMedia.id,
-              nextMediaId: newMedia.id,
-              mediaPath: nextMedia.path,
-              nextMediaPath: newMedia.path,
+              mediaId: media2.id,
+              nextMediaId: media.id,
+              mediaPath: media2.path,
+              nextMediaPath: media.path,
               step: expectedStep,
               lastTickAt: new Date(now),
             },
           },
         );
 
-        slider.mediaId = nextMedia.id;
-        slider.nextMediaId = newMedia.id;
-        slider.mediaPath = nextMedia.path;
-        slider.nextMediaPath = newMedia.path;
+        slider.mediaId = media2.id;
+        slider.nextMediaId = media.id;
+        slider.mediaPath = media2.path;
+        slider.nextMediaPath = media.path;
         slider.step = expectedStep;
         slider.lastTickAt = new Date(now);
 
-        nextMedia = { ...newMedia };
+        media2 = { ...media };
       }
     }
   }
