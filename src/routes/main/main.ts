@@ -23,9 +23,19 @@ router.get('/api/media', async (req, res) => {
 
 router.get('/api/media-sync', async (req, res) => {
   const preset = req.query.preset as string | null | undefined;
+  const syncId = req.query.sync as string | null | undefined;
+
   const presetSafe = preset ?? 'default';
 
-  const result = await getMediaSync(presetSafe);
+  if (!syncId) {
+    res.status(400).send('Sync id was not provided');
+
+    return;
+  }
+
+  const filter = getFilterFromQuery(req.query);
+
+  const result = await getMediaSync(syncId, presetSafe, filter);
 
   res.send(result);
 });

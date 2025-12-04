@@ -1,6 +1,6 @@
 import { MongoClient, ObjectId } from 'mongodb';
 import { get as mediaGet } from 'api/media/get.js';
-import { SliderDoc } from 'types';
+import { ImageFilterSafe, SliderDoc } from 'types';
 
 const client = new MongoClient('mongodb://localhost:27017');
 await client.connect();
@@ -39,13 +39,13 @@ async function tickSliders() {
 
     if (expectedStep > slider.step) {
       // пора перейти вперёд
-      const preset = slider.key; // key = preset
+      const preset = slider.preset;
 
       // текущим становится previous nextMedia
       const currentId = slider.nextMediaId;
       const currentPath = slider.nextMediaPath;
 
-      const nextMedia = await mediaGet(preset, {});
+      const nextMedia = await mediaGet(preset, slider.filter);
 
       if (!nextMedia) {
         continue;
@@ -79,8 +79,7 @@ setInterval(() => {
   tickSliders().catch(console.error);
 }, TICK_INTERVAL_MS);
 
-export async function get(preset: string): Promise<Result | null> {
-  const key = preset;
+export async function get(key: string, preset: string, filter: ImageFilterSafe): Promise<Result | null> {
   const now = Date.now();
   const nowDate = new Date(now);
 
@@ -91,8 +90,8 @@ export async function get(preset: string): Promise<Result | null> {
 
   if (!slider) {
     // первый запуск — создаём сразу media и nextMedia
-    const media = await mediaGet(preset, {});
-    const nextMedia = await mediaGet(preset, {});
+    const media = await mediaGet(preset, filter);
+    const nextMedia = await mediaGet(preset, filter);
 
     if (!media || !nextMedia) return null;
 
@@ -102,6 +101,8 @@ export async function get(preset: string): Promise<Result | null> {
       _id: new ObjectId(),
       id: key,
       key,
+      preset,
+      filter,
       intervalMs: INTERVAL_MS,
       startedAt,
       step: 0,

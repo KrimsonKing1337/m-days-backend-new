@@ -48,6 +48,8 @@ export type ImageFilter = {
   windowHeight: number;
 };
 
+export type ImageFilterSafe = Partial<ImageFilter> | undefined;
+
 export type Media = {
   _id: ObjectId;
   id: string;
@@ -65,6 +67,8 @@ export type SliderDoc = {
   _id: ObjectId;
   id: string;
   key: string;
+  preset: string;
+  filter: ImageFilterSafe;
   intervalMs: number;
   startedAt: Date;
   step: number;
