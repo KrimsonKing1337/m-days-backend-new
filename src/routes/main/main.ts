@@ -3,8 +3,8 @@ import express from 'express';
 import type { Media } from 'types';
 
 import { get as mediaGet } from 'api/media/get.js';
+import { get as getMediaSync } from 'api/mediaSync/get.js';
 import { get as presetGet } from 'api/preset/get.js';
-import { get as getSliderMedia } from 'api/sliderMedia/get.js';
 
 import { getFilterFromQuery } from './utils.js';
 
@@ -21,6 +21,15 @@ router.get('/api/media', async (req, res) => {
   res.send(result);
 });
 
+router.get('/api/media-sync', async (req, res) => {
+  const preset = req.query.preset as string | null | undefined;
+  const presetSafe = preset ?? 'default';
+
+  const result = await getMediaSync(presetSafe);
+
+  res.send(result);
+});
+
 router.get('/api/preset', async (req, res) => {
   const preset = req.query.preset as string | undefined;
   const presetSafe = preset ?? 'default';
@@ -31,16 +40,6 @@ router.get('/api/preset', async (req, res) => {
   if (!result) {
     await presetGet('default');
   }
-
-  res.send(result);
-});
-
-// todo: filter
-router.get('/api/media-sync', async (req, res) => {
-  const preset = req.query.preset as string | null | undefined;
-  const presetSafe = preset ?? 'default';
-
-  const result = await getSliderMedia(presetSafe)
 
   res.send(result);
 });
