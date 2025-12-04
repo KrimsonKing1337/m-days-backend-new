@@ -1,3 +1,5 @@
+import type { ObjectId } from 'mongodb';
+
 export type PresetOptionsWidth = number | 'windowWidth' | 'all';
 
 export type PresetOptionsType = {
@@ -44,4 +46,30 @@ export type ImageFilter = {
   size: [number, number];
   windowWidth: number;
   windowHeight: number;
+};
+
+export type Media = {
+  _id: ObjectId;
+  id: string;
+  type: 'static' | 'dynamic';
+  collection: string;
+  topic: string;
+  orientation: Orientation;
+  width: number;
+  filename: string;
+  path: string;
+  size: number;
+};
+
+export type SliderDoc = {
+  _id: ObjectId;
+  id: string;
+  key: string;
+  intervalMs: number;
+  startedAt: Date;
+  step: number;
+  currentImagePath: string;
+  currentImageId: string;
+  lastTickAt: Date;
+  active: boolean;
 };
