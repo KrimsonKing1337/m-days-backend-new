@@ -10,11 +10,15 @@ const INTERVAL_MS = 12000;
 
 type Result = {
   path: string;
+  nextPath: string;
   id: string;
+  nextId: string;
   intervalMs: number;
   serverTime: number;
   nextChangeAt: number;
 };
+
+let nextMedia: Media;
 
 export async function get(preset: string): Promise<Result | null> {
   const key = preset;
@@ -27,8 +31,10 @@ export async function get(preset: string): Promise<Result | null> {
 
   // 1) если слайдер ещё не создан – создаём
   if (!slider) {
-    const startedAt = new Date(now);
     const media = await mediaGet(preset, {});
+    nextMedia = await mediaGet(preset, {});
+
+    const startedAt = new Date(now);
 
     const doc: SliderDoc = {
       _id: new ObjectId(),
@@ -37,8 +43,10 @@ export async function get(preset: string): Promise<Result | null> {
       intervalMs: INTERVAL_MS,
       startedAt,
       step: 0,
-      currentImagePath: media.path,
-      currentImageId: media.id,
+      mediaId: media.id,
+      nextMediaId: nextMedia.id,
+      mediaPath: media.path,
+      nextMediaPath: nextMedia.path,
       lastTickAt: startedAt,
       active: true,
     };
@@ -53,25 +61,32 @@ export async function get(preset: string): Promise<Result | null> {
 
     if (expectedStep > slider.step) {
       // шаг изменился -> берём новое рандомное изображение
-      const media: Media = await mediaGet(preset, {});
+      const newMedia = await mediaGet(preset, {});
+      nextMedia = nextMedia ?? await mediaGet(preset, {});
 
-      if (media) {
+      if (nextMedia && newMedia) {
         await collection.updateOne(
           { _id: slider._id },
           {
             $set: {
-              currentImagePath: media.path,
-              currentImageId: media.id,
+              mediaId: nextMedia.id,
+              nextMediaId: newMedia.id,
+              mediaPath: nextMedia.path,
+              nextMediaPath: newMedia.path,
               step: expectedStep,
               lastTickAt: new Date(now),
             },
           },
         );
 
-        slider.currentImagePath = media.path;
-        slider.currentImageId = media.id;
+        slider.mediaId = nextMedia.id;
+        slider.nextMediaId = newMedia.id;
+        slider.mediaPath = nextMedia.path;
+        slider.nextMediaPath = newMedia.path;
         slider.step = expectedStep;
         slider.lastTickAt = new Date(now);
+
+        nextMedia = { ...newMedia };
       }
     }
   }
@@ -81,8 +96,10 @@ export async function get(preset: string): Promise<Result | null> {
     const nextChangeAt = startedAtMs + (slider.step + 1) * slider.intervalMs;
 
     return {
-      path: slider.currentImagePath,
-      id: slider.currentImageId,
+      path: slider.mediaPath,
+      nextPath: slider.nextMediaPath,
+      id: slider.mediaId,
+      nextId: slider.nextMediaId,
       intervalMs: slider.intervalMs,
       serverTime: now,
       nextChangeAt,

@@ -68,8 +68,10 @@ export type SliderDoc = {
   intervalMs: number;
   startedAt: Date;
   step: number;
-  currentImagePath: string;
-  currentImageId: string;
+  mediaPath: string;
+  nextMediaPath: string;
+  mediaId: string;
+  nextMediaId: string;
   lastTickAt: Date;
   active: boolean;
 };
