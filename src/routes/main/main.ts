@@ -35,7 +35,8 @@ router.get('/api/preset', async (req, res) => {
   res.send(result);
 });
 
-router.get('/api/media-slider', async (req, res) => {
+// todo: filter
+router.get('/api/media-sync', async (req, res) => {
   const preset = req.query.preset as string | null | undefined;
   const presetSafe = preset ?? 'default';
 

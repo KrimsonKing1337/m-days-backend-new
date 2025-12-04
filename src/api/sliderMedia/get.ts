@@ -1,7 +1,6 @@
 import { MongoClient, ObjectId } from 'mongodb';
-
 import { get as mediaGet } from 'api/media/get.js';
-import { Media, SliderDoc } from 'types';
+import { SliderDoc } from 'types';
 
 const client = new MongoClient('mongodb://localhost:27017');
 await client.connect();
@@ -18,25 +17,25 @@ type Result = {
   nextChangeAt: number;
 };
 
-let media2: Media;
-
 export async function get(preset: string): Promise<Result | null> {
   const key = preset;
   const now = Date.now();
 
   const db = client.db('sliders');
-  const collection = db.collection('sliders');
+  const collection = db.collection<SliderDoc>('sliders');
 
   let slider = await collection.findOne({ key });
 
-  // 1) если слайдер ещё не создан – создаём
   if (!slider) {
+    // первый запуск слайдера для этого пресета
     const media = await mediaGet(preset, {});
-    media2 = await mediaGet(preset, {});
+    const nextMedia = await mediaGet(preset, {});
+
+    if (!media || !nextMedia) return null;
 
     const startedAt = new Date(now);
 
-    const doc: SliderDoc = {
+    slider = {
       _id: new ObjectId(),
       id: key,
       key,
@@ -44,67 +43,62 @@ export async function get(preset: string): Promise<Result | null> {
       startedAt,
       step: 0,
       mediaId: media.id,
-      nextMediaId: media2.id,
+      nextMediaId: nextMedia.id,
       mediaPath: media.path,
-      nextMediaPath: media2.path,
+      nextMediaPath: nextMedia.path,
       lastTickAt: startedAt,
       active: true,
     };
 
-    await collection.insertOne(doc);
-
-    slider = doc;
+    await collection.insertOne(slider);
   } else {
-    // 2) слайдер есть – проверяем, не пора ли шагнуть вперёд
     const startedAtMs = slider.startedAt.getTime();
     const expectedStep = Math.floor((now - startedAtMs) / slider.intervalMs);
 
     if (expectedStep > slider.step) {
-      // шаг изменился -> берём новое рандомное изображение
-      const media = await mediaGet(preset, {});
-      media2 = media2 ?? await mediaGet(preset, {});
+      // пора перейти на следующий шаг
+      const currentId = slider.nextMediaId;
+      const currentPath = slider.nextMediaPath;
 
-      if (media2 && media) {
+      const nextMedia = await mediaGet(preset, {});
+
+      if (nextMedia) {
+        slider.mediaId = currentId;
+        slider.mediaPath = currentPath;
+        slider.nextMediaId = nextMedia.id;
+        slider.nextMediaPath = nextMedia.path;
+        slider.step = expectedStep;
+        slider.lastTickAt = new Date(now);
+
         await collection.updateOne(
           { _id: slider._id },
           {
             $set: {
-              mediaId: media2.id,
-              nextMediaId: media.id,
-              mediaPath: media2.path,
-              nextMediaPath: media.path,
-              step: expectedStep,
-              lastTickAt: new Date(now),
+              mediaId: slider.mediaId,
+              mediaPath: slider.mediaPath,
+              nextMediaId: slider.nextMediaId,
+              nextMediaPath: slider.nextMediaPath,
+              step: slider.step,
+              lastTickAt: slider.lastTickAt,
             },
           },
         );
-
-        slider.mediaId = media2.id;
-        slider.nextMediaId = media.id;
-        slider.mediaPath = media2.path;
-        slider.nextMediaPath = media.path;
-        slider.step = expectedStep;
-        slider.lastTickAt = new Date(now);
-
-        media2 = { ...media };
       }
     }
   }
 
-  if (slider) {
-    const startedAtMs = slider.startedAt.getTime();
-    const nextChangeAt = startedAtMs + (slider.step + 1) * slider.intervalMs;
+  if (!slider) return null;
 
-    return {
-      path: slider.mediaPath,
-      nextPath: slider.nextMediaPath,
-      id: slider.mediaId,
-      nextId: slider.nextMediaId,
-      intervalMs: slider.intervalMs,
-      serverTime: now,
-      nextChangeAt,
-    };
-  }
+  const startedAtMs = slider.startedAt.getTime();
+  const nextChangeAt = startedAtMs + (slider.step + 1) * slider.intervalMs;
 
-  return null;
+  return {
+    path: slider.mediaPath,
+    nextPath: slider.nextMediaPath,
+    id: slider.mediaId,
+    nextId: slider.nextMediaId,
+    intervalMs: slider.intervalMs,
+    serverTime: now,
+    nextChangeAt,
+  };
 }
