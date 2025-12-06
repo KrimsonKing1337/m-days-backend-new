@@ -33,41 +33,41 @@ async function tickSliders() {
   const now = Date.now();
   const sliders = await collection.find({ active: true }).toArray();
 
-  for (const slider of sliders) {
-    const startedAtMs = slider.startedAt.getTime();
-    const expectedStep = Math.floor((now - startedAtMs) / slider.intervalMs);
+  for (const sliderCur of sliders) {
+    const startedAtMs = sliderCur.startedAt.getTime();
+    const expectedStep = Math.floor((now - startedAtMs) / sliderCur.intervalMs);
 
-    if (expectedStep > slider.step) {
+    if (expectedStep > sliderCur.step) {
       // пора перейти вперёд
-      const preset = slider.preset;
+      const preset = sliderCur.preset;
 
       // текущим становится previous nextMedia
-      const currentId = slider.nextMediaId;
-      const currentPath = slider.nextMediaPath;
+      const currentId = sliderCur.nextMediaId;
+      const currentPath = sliderCur.nextMediaPath;
 
-      const nextMedia = await mediaGet(preset, slider.filter);
+      const nextMedia = await mediaGet(preset, sliderCur.filter);
 
       if (!nextMedia) {
         continue;
       }
 
-      slider.mediaId = currentId;
-      slider.mediaPath = currentPath;
-      slider.nextMediaId = nextMedia.id;
-      slider.nextMediaPath = nextMedia.path;
-      slider.step = expectedStep;
-      slider.lastTickAt = new Date(now);
+      sliderCur.mediaId = currentId;
+      sliderCur.mediaPath = currentPath;
+      sliderCur.nextMediaId = nextMedia.id;
+      sliderCur.nextMediaPath = nextMedia.path;
+      sliderCur.step = expectedStep;
+      sliderCur.lastTickAt = new Date(now);
 
       await collection.updateOne(
-        { _id: slider._id },
+        { _id: sliderCur._id },
         {
           $set: {
-            mediaId: slider.mediaId,
-            mediaPath: slider.mediaPath,
-            nextMediaId: slider.nextMediaId,
-            nextMediaPath: slider.nextMediaPath,
-            step: slider.step,
-            lastTickAt: slider.lastTickAt,
+            mediaId: sliderCur.mediaId,
+            mediaPath: sliderCur.mediaPath,
+            nextMediaId: sliderCur.nextMediaId,
+            nextMediaPath: sliderCur.nextMediaPath,
+            step: sliderCur.step,
+            lastTickAt: sliderCur.lastTickAt,
           },
         },
       );
