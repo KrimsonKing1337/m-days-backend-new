@@ -29,8 +29,9 @@ export function getFilterFromQuery(query: Request['query']) {
 
   const windowWidthSafe = windowWidth ? Number(windowWidth): 1920;
   const windowHeightSafe = windowHeight ? Number(windowHeight): 1080;
+  const dimensionForClosestWidth = windowWidthSafe > windowHeightSafe ? windowWidthSafe : windowHeightSafe;
 
-  const closestWindowWidth = getClosestWidth(windowWidthSafe);
+  const closestWindowWidth = getClosestWidth(dimensionForClosestWidth);
 
   const filter: Partial<ImageFilter> = {
     windowWidth: closestWindowWidth,

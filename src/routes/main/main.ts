@@ -12,12 +12,20 @@ export const router = express.Router();
 
 router.get('/api/media', async (req, res) => {
   const preset = req.query.preset as string | null | undefined;
+  const justPath = req.query.justPath as string | null | undefined;
+
   const presetSafe = preset ?? 'default';
 
   const filter = getFilterFromQuery(req.query);
 
   const result: Media = await mediaGet(presetSafe, filter);
 
+  // только для legacy, старые браузеры не поддерживают JSON.parse
+  if (justPath) {
+    res.send(result.path);
+
+    return;
+  }
   res.send(result);
 });
 
