@@ -41,11 +41,9 @@ app.disable('x-powered-by');
 */
 // app.use('/', express.static(path.join(webRoot, '')));
 
-// не помню зачем нужен m-days-public, если он дублирует dist
-// app.use(express.static(path.join(webRoot, 'm-days-public')));
+// m-days-public нужен для m-days-widget, m-days-legacy и прочего
+app.use(express.static(path.join(webRoot, 'm-days-public')));
 app.use(express.static(path.join(webRoot, 'm-days-public-images')));
-
-app.use('/', express.static(path.join(webRoot, 'm-days-fe-widget/dist')));
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({

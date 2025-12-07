@@ -12,7 +12,7 @@ export const router = express.Router();
 
 router.get('/api/media', async (req, res) => {
   const preset = req.query.preset as string | null | undefined;
-  const justPath = req.query.justPath as string | null | undefined;
+  const onlyPath = req.query.onlyPath as string | null | undefined;
 
   const presetSafe = preset ?? 'default';
 
@@ -21,7 +21,7 @@ router.get('/api/media', async (req, res) => {
   const result: Media = await mediaGet(presetSafe, filter);
 
   // только для legacy, старые браузеры не поддерживают JSON.parse
-  if (justPath) {
+  if (onlyPath) {
     res.send(result.path);
 
     return;
